@@ -10,6 +10,7 @@ import lila.hub.actorApi.{ DonationEvent, Deploy, RemindDeployPre, RemindDeployP
 final class Env(
     config: Config,
     getLightUser: String => Option[lila.common.LightUser],
+    isProd: Boolean,
     system: ActorSystem) {
 
   private val IncomingUrl = config getString "incoming.url"
@@ -23,10 +24,12 @@ final class Env(
 
   system.lilaBus.subscribe(system.actorOf(Props(new Actor {
     def receive = {
-      case d: DonationEvent            => api donation d
-      case Deploy(RemindDeployPre, _)  => api.deployPre
-      case Deploy(RemindDeployPost, _) => api.deployPost
-      case e: Event                    => api publishEvent e
+      case d: DonationEvent                      => api donation d
+      case Deploy(RemindDeployPre, _) if isProd  => api.deployPreProd
+      case Deploy(RemindDeployPost, _) if isProd => api.deployPostProd
+      case Deploy(RemindDeployPre, _)            => api.deployPreStage
+      case Deploy(RemindDeployPost, _)           => api.deployPostStage
+      case e: Event                              => api publishEvent e
     }
   })), 'donation, 'deploy, 'slack)
 }
@@ -36,5 +39,6 @@ object Env {
   lazy val current: Env = "slack" boot new Env(
     system = lila.common.PlayApp.system,
     getLightUser = lila.user.Env.current.lightUser,
+    isProd = lila.common.PlayApp.isProd,
     config = lila.common.PlayApp loadConfig "slack")
 }

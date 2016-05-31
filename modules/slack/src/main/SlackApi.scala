@@ -63,15 +63,27 @@ final class SlackApi(
     text = s"Let's have a look at <http://lichess.org/@/${user.username}?mod>",
     channel = "tavern"))
 
-  def deployPre: Funit = client(SlackMessage(
+  def deployPreProd: Funit = client(SlackMessage(
     username = "deployment",
     icon = "rocket",
     text = "Lichess will be updated in a few minutes! Fasten your seatbelts.",
     channel = "general"))
 
-  def deployPost: Funit = client(SlackMessage(
+  def deployPostProd: Funit = client(SlackMessage(
     username = "deployment",
     icon = "rocket",
     text = "Lichess is being updated! Brace for impact.",
+    channel = "general"))
+
+  def deployPreStage: Funit = client(SlackMessage(
+    username = "STAGE deployment",
+    icon = "volcano",
+    text = "stage.lichess.org will be updated in a minute.",
+    channel = "general"))
+
+  def deployPostStage: Funit = client(SlackMessage(
+    username = "STAGE deployment",
+    icon = "volcano",
+    text = "stage.lichess.org has been updated!",
     channel = "general"))
 }
