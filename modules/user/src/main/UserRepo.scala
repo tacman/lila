@@ -242,12 +242,14 @@ object UserRepo {
   def engineIds: Fu[Set[String]] =
     coll.distinct("_id", $doc("engine" -> true).some) map lila.db.BSON.asStringSet
 
-  def usernamesLike(username: String, max: Int = 10): Fu[List[String]] =
-    if (username.size < 3) fuccess(Nil)
+  private val userIdPattern = """^[\w-]{3,20}$""".r.pattern
+
+  def usernamesLike(text: String, max: Int = 10): Fu[List[String]] = {
+    val id = normalize(text)
+    if (!userIdPattern.matcher(id).matches) fuccess(Nil)
     else {
       import java.util.regex.Matcher.quoteReplacement
-      val escaped = """^([\w-]*).*$""".r.replaceAllIn(normalize(username), m => quoteReplacement(m group 1))
-      val regex = "^" + escaped + ".*$"
+      val regex = "^" + id + ".*$"
       coll.find($doc("_id".$regex(regex, "")), $doc(F.username -> true))
         .sort($doc("enabled" -> -1, "len" -> 1))
         .cursor[Bdoc](ReadPreference.secondaryPreferred).gather[List](max)
@@ -255,6 +257,7 @@ object UserRepo {
           _ flatMap { _.getAs[String](F.username) }
         }
     }
+  }
 
   def toggleEngine(id: ID): Funit =
     coll.fetchUpdate[User]($id(id)) { u =>
